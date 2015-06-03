@@ -1,46 +1,45 @@
 var _ = require('lodash'),
-    request = require('request'),
+    google = require('google'),
     Promise = require('es6-promise').Promise
 
-var cx = '000976012178796896721:rw5dij0k0lu'
-var key = 'AIzaSyCrqvT5sk80Xn1usAa7AgcsRTvfko1ff-o'
+var totalPages = 4
 
-var googleURL = function(query, index) {
-  if (isNaN(index))
-    index = 1
-
-  return 'https://www.googleapis.com/customsearch/v1?key=' + key + '&q=' + encodeURIComponent(query) + '&cx=' + cx + '&filter=1&num=10&start=' + (+index + 1)
-}
+google.resultsPerPage = 100
 
 var searchGoogle = function(query) {
   return new Promise(function(resolve, reject) {
-    request(googleURL(query, i), function(err, resp, body) {
+    var results = [],
+        i       = 1
+
+    google(query, function(err, next, res) {
       if (err)
         return reject(err)
 
-      var json = JSON.parse(body)
+      res.forEach(function(link) {
+        if (link.href)
+          results.push({
+            title: link.title,
+            link: link.href.match(/((http|https):\/\/.*\/)/)[1]
+          })
+      })
 
-      if (json.spelling && json.spelling.correctedQuery)
-        searchGoogle(json.spelling.correctedQuery)
-          .then(resolve, reject)
+      if (++i > totalPages)
+        next()
       else
-        resolve(json.items)
+        resolve(results)
     })
   })
 }
 
-var promiseQue = []
+module.exports = function(query) {
+  var promiseQue = []
 
-for (var i = 1; i < 11; i++) 
-  promiseQue.push(searchGoogle('mika kalathil', i))
+  for (var i = 1; i < 11; i++) 
+    promiseQue.push(searchGoogle(query))
 
-modules.exports = Promise.all(promiseQue)
-  .then(_.flatten)
-  .then(function(data) {
-    return data.map(function(item) {
-      return {
-        title: item.title,
-        siteMap: item.displayLink
-      }
+  return Promise.all(promiseQue)
+    .then(function(data) {
+      return _.unique(data, 'link')
     })
-  })
+}
+
