@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var cli = require('cli'),
-    search = require('./edvisor_search')
+    search = require('./lib/edvisor_search')
 
 cli.main(function(args, opts) {
   if (!args.length)
