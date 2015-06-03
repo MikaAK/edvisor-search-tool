@@ -2,9 +2,9 @@ var _ = require('lodash'),
     google = require('google'),
     Promise = require('es6-promise').Promise
 
-var totalPages = 4
+var totalPages = 1
 
-google.resultsPerPage = 100
+google.resultsPerPage = 50
 
 var searchGoogle = function(query) {
   return new Promise(function(resolve, reject) {
@@ -23,23 +23,15 @@ var searchGoogle = function(query) {
           })
       })
 
-      if (++i > totalPages)
+      if (++i < totalPages)
         next()
       else
-        resolve(results)
+        resolve(_.unique(results, 'link'))
     })
   })
 }
 
 module.exports = function(query) {
-  var promiseQue = []
-
-  for (var i = 1; i < 11; i++) 
-    promiseQue.push(searchGoogle(query))
-
-  return Promise.all(promiseQue)
-    .then(function(data) {
-      return _.unique(data, 'link')
-    })
+  return searchGoogle(query)
 }
 

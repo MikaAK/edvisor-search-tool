@@ -1,26 +1,34 @@
-var _         = require('lodash'),
-    Promise   = require('es6-promise').Promise,
-    extractor = require('./extractor_tool')
+var _           = require('lodash'),
+    Promise     = require('es6-promise').Promise,
+    requestor   = require('./requestor'),
+    search_tool = require('./google_search')
 
+module.exports = function(query) {
+  var emails = []
+  var links = []
 
-var dummyData = ['www.thecambiogroup.com/', 'www.queensu.ca', 'www.schoolsandagents.com']
+  return search_tool(query)
+    .then(function(res) {
+      return requestor(_.pluck(res, 'link'))
+    })
+    .then(function(data) {
+      console.log('Finished first set')
+      emails = data.email
+      links  = data.link
+      console.log("Fetched Links: ", links.length)
 
-var emails = []
-var links = []
+      return requestor(links)
+    })
+    .then(function(data) {
+      emails = emails.concat(data.email)
+      links = links.concat(data.link)
 
-extractor(dummyData)
-  .then(function(data) {
-    emails = data.email
-    links  = data.link
-
-    return extractor(data.link)
-  })
-  .then(function(data) {
-    emails = emails.concat(data.email)
-    links = links.concat(data.link)
-
-    console.warn(emails)
-  })
-  .catch(function(e) {
-    console.log(e)
-  })
+      return {
+        emails: _.unique(emails), 
+        links: _.unique(links)
+      }
+    })
+    .catch(function(e) {
+      console.log(e)
+    })
+}
